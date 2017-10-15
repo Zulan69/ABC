@@ -1,0 +1,5 @@
+NumeroExperimentos=1
+Abejas=250
+NP=30
+Trial=10
+Ejecuciones=10
