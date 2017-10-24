@@ -14,6 +14,7 @@ import Kernel.ArtificialBeeColony;
 public class ConfigInicialABC implements ManejoArchivo{
 	
 	private int NoExperimentos;
+	
 
 	public boolean detectarArchivo() {
 		// TODO Auto-generated method stub
@@ -46,6 +47,8 @@ public class ConfigInicialABC implements ManejoArchivo{
 			bw.write("Abejas=100");
 			bw.newLine();
 			bw.write("NP=20");
+			bw.newLine();
+			bw.write("Limit=20");
 			bw.newLine();
 			bw.write("Trial=5");
 			bw.newLine();
@@ -102,7 +105,7 @@ public class ConfigInicialABC implements ManejoArchivo{
 
 		Log log = new Log();
 		
-		int Abejas = 0,NP=0,Limit=0,NoExperimentos=0,Loop=0,Ejecuciones=0;
+		int Abejas = 0,NP=0,Tries=0,NoExperimentos=0,Limit=0,Ejecuciones=0;
 		
 		try {
 			String cadena = null;
@@ -133,10 +136,13 @@ public class ConfigInicialABC implements ManejoArchivo{
 							case 2: // numero de NP
 									NP = Integer.parseInt(aux);
 									break;
-							case 3: // Trial
+							case 3: // numero de NP
 									Limit = Integer.parseInt(aux);
 									break;
-							case 4: // Numero de Ejecuciones
+							case 4: // Trial
+									Tries = Integer.parseInt(aux);
+									break;
+							case 5: // Numero de Ejecuciones
 									Ejecuciones = Integer.parseInt(aux);
 									break;
 						}
@@ -156,8 +162,7 @@ public class ConfigInicialABC implements ManejoArchivo{
 			log.escribirArchivo("Error de Lectura archivo config.txt");
 		}
 		
-		
-		Abc = new ArtificialBeeColony(Abejas,NP,Limit,Ejecuciones);
+		Abc = new ArtificialBeeColony(Abejas,NP,Limit,Tries,Ejecuciones);
 		
 		
 		//log.escribirArchivo("Configuraci�n inicial seteada");

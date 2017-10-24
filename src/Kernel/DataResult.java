@@ -115,10 +115,11 @@ public class DataResult {
 		
 		for (int[][] Var : OptimoPromedio) {
 			for (int i=0; i < Var.length ; i++) {
+				
 				for (int j = 0; j < Var[0].length ; j++) {
 					
 					suma=suma+Var[i][j];
-					cont=++cont;
+					cont=cont+1;
 					
 				}	
 			}

@@ -17,6 +17,7 @@ public class Solucion{
 	private ModelMCDP originalModel;
 	private double selectionProbability;
 	private int trials;
+	private boolean res;
 
 	public int getTrials() {
 		return trials;
@@ -106,17 +107,22 @@ public class Solucion{
 	}
 	
 	
-	public boolean Cambio(int maq){
+	public boolean Cambio(int newValue){
 		
 		boolean check;
 		// Generates a random initial solution.
 		// Genera una solucionn consistente, ha pasado por las 3 restricciones y se ha calculado su fitness.
 		while (true)
 		{
-			check = Flor_ManualWithRandomBitB_Y();
+			//int val=(int)(Math.random()*16);
+			int val=(int)(Math.random()*16);
+			check = Flor_ManualWithCambio(val);
+			
+			//check = Flor_ManualWithRandomBitB_Y();
+			//this.getModel().showAllData();
 			if (check == true)
 			{
-				//.println("==================================================== ENCONTRADO_Y");
+				//System.out.println("==================================================== ENCONTRADO_Y");
 				break;
 			}
 			//System.out.println("==================================================== AGAIN Y");
@@ -132,10 +138,10 @@ public class Solucion{
 			//System.out.println("==================================================== AGAIN Z");
 		}
 		int objectiveFunctionValue = originalModel.objectiveFunction();
+		
 		originalModel.setLocalZ(objectiveFunctionValue);
-		
-		
-		
+			
+		//System.out.println("[SOL] Fuera de Cambio\n");
 		return true;
 		
 	}
@@ -312,7 +318,7 @@ public class Solucion{
 			boolean res1 =originalModel.consistencyConstraint_1() ;
 			
 			boolean res2 = originalModel.consistencyConstraint_3();
-			
+			//System.out.println("C3 "+this.getModel().ColumnaExcede());
 			boolean res =  res1 & res2;
 			
 			//System.out.println("res1 "+ res1 + " res2 "+ res2 + "  ambas => "+ res);
@@ -321,7 +327,6 @@ public class Solucion{
 	
 	 private boolean Flor_ManualWithCambio(int maq)
 		{
-		 	
 		 	// Determine a new solution matrix Y
 			int[] oldCell, newCell;
 			int Y[][] = new int[originalModel.getM()][originalModel.getC()];
@@ -337,39 +342,79 @@ public class Solucion{
 			}
 		
 			// Find a (x, y) in the matrix with value 1.
-			oldCell = searchCellPosition(Y, 1,maq);
+			oldCell = searchCellPosition(Y, 1);
 			
 			// Find a (x, y) in the matrix.
 			newCell = searchCellPositionInRow(Y, 1, oldCell[0]);
+				
 			
-			// Change the values to generate a new neighbor.
-			// Example
-			// [x,y] <=> [0,0] = 1
-			// [x,y+1] <=> [0,1] = 0
-			// after->
-			// [x,y] <=> [0,0] = 0
-			// [x,y+1] <=> [0,1] = 1
+//			// Find a (x, y) in the matrix with value 1.
+//			oldCell = searchCellPosition(Y, 1);
+//			
+//			// Find a (x, y) in the matrix.
+//			newCell = searchCellPositionInRow(Y, 1, oldCell[0]);
+//						
 			
 			Y[oldCell[0]][oldCell[1]] = 0;
 			Y[newCell[0]][newCell[1]] = 1;
 			
-
-			//System.out.println("\n");
+			
+			
 			// Save the new matrix.
 			this.originalModel.setY(Y);
+			//System.out.println("Excede"+originalModel.ColumnaExcede());
+			
 			
 			boolean res1 =originalModel.consistencyConstraint_1() ;
-			
 			boolean res2 = originalModel.consistencyConstraint_3();
 			
-			boolean res =  res1 & res2;
+			/*Logica*/
+			if(this.getTrials()>trials){
+				
+				int excede=originalModel.ColumnaExcede();
+				
+				oldCell =searchCellPosition(Y, 1, excede) ;
+				newCell = searchCellPositionInRow(Y, 1, oldCell[0]);
+				
+				Y[oldCell[0]][oldCell[1]] = 0;
+				Y[newCell[0]][newCell[1]] = 1;
+				
+				//System.out.println("Excede"+originalModel.ColumnaExcede());
+				res2 = originalModel.consistencyConstraint_3();
+				
+				
+			}
+			return res1 & res2;
 			
-			//System.out.println("res1 "+ res1 + " res2 "+ res2 + "  ambas => "+ res);
-			return res;
 		}
 
 	 
-	 private int[] searchCellPosition(int Y[][], int value)
+	private int[] searchCellPositionInColumn(int[][] Y, int busca, int col){
+		 
+		 	int result[] = new int[2];
+		 	
+			while (true)
+			{
+
+				int x = (int)(this.getModel().getM()*V4(this.getModel().getM()/100000000));
+				int y = col;
+				
+				int cell = Y[x][y]; 
+				if (cell == busca)
+				{
+					result[0] = x;
+					result[1] = y;
+					break;
+				}	
+			}
+		 	
+		 	return result;
+	}
+	
+	
+
+
+	private int[] searchCellPosition(int Y[][], int value)
 		{
 			Random random = new Random();
 			int result[] = new int[2];
@@ -395,18 +440,15 @@ public class Solucion{
 			return result;
 		}
 	 
-	 private int[] searchCellPosition(int Y[][], int value, int maq)
+	/* Busca en la fila:x indicada el valor :value */
+	 private int[] searchCellPosition(int Y[][], int value, int x)
 		{
 			Random random = new Random();
 			int result[] = new int[2];
 			
-			int x = 0;
 			int y = 0;
 			while (true)
 			{
-				// Random (i,k) position.
-				// (i,k) <=> (x,y).
-				x = maq;
 				y = (int) (random.nextDouble() * originalModel.getC());
 				
 				int cell = Y[x][y]; 
@@ -417,7 +459,7 @@ public class Solucion{
 					break;
 				}	
 			}
-		
+			
 			return result;
 		}
 	 
@@ -429,12 +471,16 @@ public class Solucion{
 			
 			
 			while (true)
-			{	
-				double r= (   (double)Math.random()*32767 / ((double)(32767)+(double)(1)) );
+			{
+				//System.out.println("Casi");
+				//double r= (   (double)Math.random()*32767 / ((double)(32767)+(double)(1)) );
 				//y= (int) (row + (row - aux_y)*(r-0.5)*2);
 				
 				y = (int) (random.nextDouble() * originalModel.getC());
 				y= (int) Math.floor(V4(y)*(originalModel.getC()));
+				
+				
+				//y =(int)(Math.random()*this.getModel().getC());
 				
 				//System.out.println(y);
 				
@@ -445,23 +491,53 @@ public class Solucion{
 					result[1] = y;
 					break;
 				}
+				
 			}
 		
 			return result;
 		}
 	 
-	 private static double V4(double x)
-	   {
-	       double s_bin;  
-	       s_bin= (2/Math.PI)* Math.atan((Math.PI/2)*x);
-	       
-	       if(s_bin<0)
-	       {
-	           s_bin = s_bin*-1;
-	       }
-	       return s_bin;
-	       
-	   }
+	 	//'
+	    public static double S1(float x)
+	    {
+	        return 1/(1 + Math.pow(Math.E, (-2 * x)));
+	    }
+
+	    public static double S2(float x)
+	    {
+	        return 1/(1 + Math.pow(Math.E, (-1 * x)));
+	    }
+
+	    public static double S3(float x)
+	    {
+	        return 1/(1 + Math.pow(Math.E, ((-1 * x)/2) ));
+	    }
+
+	    public static double S4(float x)
+	    {
+	        return 1/(1 + Math.pow(Math.E, ((-1 * x)/3) ));
+	    }
+
+
+	    // V2
+	    public static double V2(float x)
+	    {
+	        return Math.abs( Math.tanh(x) );
+	    }
+
+	    // V3
+	    public static double V3(float x)
+	    {
+	        return Math.abs( x / Math.sqrt(1 + Math.pow(x, 2)));
+	    }
+
+	    // V4
+	    public static double V4(float x)
+	    {
+	        return Math.abs( (2/Math.PI) * Math.atan( (Math.PI/2) * x));
+	    }
+
+	    
 
 
 	public void setSelectionProbability(double mSelectionProbability) {

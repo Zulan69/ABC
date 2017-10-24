@@ -203,15 +203,72 @@ public class ModelMCDP {
 			// Check Summation <= Mmax
 			if (count > this.Mmax)
 			{
-				//System.out.println("Count "+ count);
+//				System.out.println("Hay "+ count+" Deben ser "+this.Mmax+" Exede la celda "+k);
 				return false;
 			}
 			
 			count = 0;
 			
 		}
-		
+//		System.out.println("Count "+ count);
 		return true;
+	}
+	
+	public int ColumnaExcede()
+	{
+		int count = 0;
+		
+		for (int k = 0; k < this.C; k++)
+		{
+			for (int i = 0; i < this.M; i++)
+			{
+				// Count 1 in the Column
+				if (Y[i][k] == 1)
+				{
+					count++;
+				}
+			}
+			
+			// Check Summation <= Mmax
+			if (count > this.Mmax)
+			{
+				//System.out.println("Maquinas "+count);
+				return k;
+			}
+			
+			count = 0;
+			
+		}
+//		System.out.println("Count "+ count);
+		return -1;
+	}
+	
+	public int ColumnaFalta()
+	{
+		int count = 0;
+		
+		for (int k = 0; k < this.C; k++)
+		{
+			for (int i = 0; i < this.M; i++)
+			{
+				// Count 1 in the Column
+				if (Y[i][k] == 1)
+				{
+					count++;
+				}
+			}
+			
+			// Check Summation <= Mmax
+			if (count < this.Mmax)
+			{
+				return k;
+			}
+			
+			count = 0;
+			
+		}
+//		System.out.println("Count "+ count);
+		return 1;
 	}
 	
 	public int objectiveFunction(int[][] A, int[][] Y, int[][] Z)

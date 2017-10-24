@@ -6,6 +6,10 @@ import java.util.ArrayList;
 import java.util.Random;
 import java.util.Set;
 
+import javax.swing.text.DefaultEditorKit.BeepAction;
+
+import org.omg.CORBA.Current;
+
 import com.sun.xml.internal.ws.policy.spi.PolicyAssertionValidator.Fitness;
 
 import Configuración.Log;
@@ -24,18 +28,17 @@ public class ArtificialBeeColony {
 	int limite;
 	boolean explorar;
 	
-	/*ABC PARAMETERS*/
+	/*Parametros ABEJAS*/
 	int MAX_LENGTH; 		/*The number of parameters of the problem to be optimized*/
     int Abejas; 			/*The number of total bees/colony size. employed + onlookers*/
     int FOOD_NUMBER; 		/*The number of food sources equals the half of the colony size*/
     
     int LIMIT;  			/*A food source which could not be improved through "limit" trials is abandoned by its employed bee*/
     int MAX_EPOCH; 			/*The number of cycles for foraging {a stopping criteria}*/
-    int MIN_SHUFFLE;
-    int MAX_SHUFFLE;
+    
 
 	Random rand;
-    ArrayList<Solucion> foodSources;
+    ArrayList<Solucion> foodSources=null;;
     ArrayList<Flor> solutions;
     Solucion gBest;
     int epoch;
@@ -44,11 +47,17 @@ public class ArtificialBeeColony {
 	private double MejorFit;
 	private int PosicionMejorFit;
 	private Object[] probabilidad;
+	private boolean ONtrial=false;
+	private boolean OnLocalz=false;
+	private boolean ONMejoro=false;
+	private int countMejoro;
+	private int val;
+	private boolean PrevActualConflict=false;
 
-	public ArtificialBeeColony(int Abejas, int NP2, int Tries, int Ejecuciones) {
+	public ArtificialBeeColony(int Abejas, int NP2,int limite, int Tries, int Ejecuciones) {
 		this.Abejas = Abejas;
 		this.FOOD_NUMBER = NP2 ;
-		this.limite = NP2;
+		this.limite = limite;
 		this.Tries = Tries;
 		this.Ejecuciones = Ejecuciones;
 		
@@ -88,42 +97,40 @@ public class ArtificialBeeColony {
 		return result;
 	}
 
-	public Solucion algorithm(ModelMCDP model) {
+	public InterCambio algorithm(ModelMCDP model) {
 
-		Log log = new Log();
-		
 		
 		foodSources = new ArrayList<Solucion>();
-    	solutions = new ArrayList<Flor >();
-        rand = new Random();
+    	rand = new Random();
         boolean done = false;
         epoch = 0;
+        
 
         initialize(model);
         memorizeBestFoodSource();
 
         while(!done) {
             if(epoch < limite) {
-
                 sendEmployedBees();
-
-                getFitness();
-
-                calculateProbabilities();
-
-                sendOnlookerBees();
-
-                memorizeBestFoodSource();
-
-                sendScoutBees(model);
                 
+                getFitness();
+                calculateProbabilities();
+                sendOnlookerBees();
+                memorizeBestFoodSource();
+                sendScoutBees(model);
                 epoch++;
+                
+                
             } else {
                 done = true;
             }
             
         }
-		return gBest;
+        
+        
+        InterCambio Sol = new InterCambio(gBest); 
+        
+        return Sol;
 		
 	}
 	
@@ -132,7 +139,7 @@ public class ArtificialBeeColony {
 	 */ 
    public void initialize(ModelMCDP model) {
        
-       for(int i = 0; i < FOOD_NUMBER; i++) {
+	   for(int i = 0; i < FOOD_NUMBER; i++) {
            Solucion newHoney = new Solucion(model,1);
       
            foodSources.add(newHoney);
@@ -141,23 +148,22 @@ public class ArtificialBeeColony {
 
 
 	private void sendScoutBees(ModelMCDP model) {
-		// TODO Auto-generated method stub
 		Solucion currentBee = null;
-        //int shuffles = 0;
-
+        
         for(int i =0; i < FOOD_NUMBER; i++) {
-            currentBee = foodSources.get(i);
-            if(currentBee.getTrials() >= LIMIT) {
-//              
-            	//shuffles = getRandomNumber(MIN_SHUFFLE, MAX_SHUFFLE);
-//                for(int j = 0; j < shuffles; j++) {
-//                    randomlyArrange(i);
-//                }
-//                currentBee.computeConflicts();
-//                currentBee.setTrials(0);
+            
+        	currentBee = foodSources.get(i);
+            
+        	if(ONtrial)
+        		System.out.println("Trial " +" i "+ i +"| Trial:"+currentBee.getTrials());
+            
+            if(currentBee.getTrials() >= Tries){
             	
             	Solucion newHoney = new Solucion(model,1);
                 currentBee = newHoney;
+                foodSources.set(i, currentBee);
+                if(ONtrial)
+                	System.out.println("Nueva Solucion");
 
             }
         }
@@ -165,8 +171,10 @@ public class ArtificialBeeColony {
 
 	private void memorizeBestFoodSource() {
 		
-		int min = foodSources.get(0).getModel().getLocalZ();
+		gBest = foodSources.get(0);
+		int min = gBest.getModel().getLocalZ();
 		int Fitness =0;
+		
 		
 		for (int i = 0; i < foodSources.size(); i++) {
 			Fitness = foodSources.get(i).getModel().objectiveFunction();
@@ -192,10 +200,11 @@ public class ArtificialBeeColony {
         while(t < FOOD_NUMBER) {
             currentBee = foodSources.get(i);
             if(rand.nextDouble() < currentBee.getSelectionProbability()) {
-                t++;
+                
                 neighborBeeIndex = getExclusiveRandomNumber(FOOD_NUMBER-1, i);
 	            neighborBee = foodSources.get(neighborBeeIndex);
-	            sendToWork(currentBee, neighborBee);
+	            sendToWork(currentBee, neighborBee,t);
+	            t++;
             }
             i++;
             if(i == FOOD_NUMBER) {
@@ -245,60 +254,100 @@ public class ArtificialBeeColony {
         Solucion neighborBee = null;
         
         for(int i = 0; i < FOOD_NUMBER; i++) {
-            //A randomly chosen solution is used in producing a mutant solution of the solution i
-            //neighborBee = getRandomNumber(0, Food_Number-1);
-        	
-        	//System.out.println("abejas "+Abejas);
+            
             neighborBeeIndex = getExclusiveRandomNumber(foodSources.size()-1, i);
             currentBee = foodSources.get(i);
             
             neighborBee = foodSources.get(neighborBeeIndex);
             
-            sendToWork(currentBee, neighborBee);
+            if(OnLocalz)
+            	System.out.println("[Artif]  antes Localz" +currentBee.getModel().getLocalZ());
+            
+            sendToWork(currentBee, neighborBee,i);
+            
+            if(OnLocalz)
+            	System.out.println("[Artif] Despues" );
         }
 		
 	}
 
 	
-	public void sendToWork(Solucion currentBee, Solucion neighborBee) {
-    	
+	public void sendToWork(Solucion currentBee, Solucion neighborBee,int i) {
+    	 	
 		int newValue = 0;
-        int tempValue = 0;
         int prevConflicts = 0;
         int currConflicts = 0;
-        
-
         
         Solucion Aux = currentBee;
         prevConflicts= currentBee.getModel().objectiveFunction();
         
         //The parameter to be changed is determined randomly
-        newValue = (int)(tempValue+(tempValue - neighborBee.getModel().objectiveFunction())*(rand.nextDouble()-0.5)*2);
+        newValue = (int) (currentBee.getModel().objectiveFunction()+(currentBee.getModel().objectiveFunction() - neighborBee.getModel().objectiveFunction())*(rand.nextDouble()-0.5)*2);
         // Validacion si es mayor que las maquinas o menor que cero
         if(newValue > currentBee.getModel().getM() || newValue < 0){
-        	newValue = (int) rand.nextInt() *currentBee.getModel().getM();
+        	if(ONMejoro){
+	        	newValue = (int) rand.nextInt() *currentBee.getModel().getM();
+	        	System.out.println("[ABC] newValue "+newValue);
+	        	System.out.println("[ABC] newValue/1000000 "+newValue/100000000);
+	        	System.out.println("[ABC] V4 "+V4(newValue/100000000));
+	        	System.out.println("[ABC] V4*16 -->"+16*V4(newValue/100000000));
+	        	val=(int)(currentBee.getModel().getM()*V4(16/100000000));
+	        	System.out.println("[ABC] entero --> "+val);
+	        	//currentBee.getModel().showAllData();
+	        	System.out.println("\n");
+        	}
         }
+        if(OnLocalz)
+        	System.out.println("[ABC] Localz 0 "+currentBee.getModel().getLocalZ());
         
         /*
-		    v_{ij}=x_{ij}+\phi_{ij}*(x_{kj}-x_{ij}) 
-		    solution[param2change]=Foods[i][param2change]+(Foods[i][param2change]-Foods[neighbour][param2change])*(r-0.5)*2;
-        */
+	    v_{ij}=x_{ij}+\phi_{ij}*(x_{kj}-x_{ij}) 
+	    solution[param2change]=Foods[i][param2change]+(Foods[i][param2change]-Foods[neighbour][param2change])*(r-0.5)*2;
+         */
+        currentBee.Cambio(val);
         
-        currentBee.Cambio(newValue);
+        
         
         currConflicts = currentBee.getModel().objectiveFunction();
+        if(OnLocalz)
+        	System.out.println("[ABC]  Localz 1 "+currentBee.getModel().getLocalZ());
         
-
-        //greedy selection
-        if(prevConflicts < currConflicts) {						//No improvement
-            
+        
+        if(PrevActualConflict)
+        	System.out.println("PrevConflict & ACtualConflict "+prevConflicts +" & "+ currConflicts);
+        
+        if(prevConflicts <= currConflicts) {						//No improvement
+        	
         	currentBee = Aux;
-            
             currentBee.setTrials(currentBee.getTrials()+1);
+            countMejoro++;
+            
         } else {												//improved solution
-            currentBee.setTrials(0);
+            
+        	currentBee.setTrials(0);
+            if(ONMejoro){
+            	System.out.println("[ABC] Se demoro en mejorar "+ countMejoro);
+            	System.out.println("[ABC] Mejoro "+ currentBee.getModel().getLocalZ());
+        	}
+            
+            //currentBee.getModel().showAllData();
+        	
+        	foodSources.set(i, currentBee);
         }   
     }
+	
+	private static double V4(double x)
+	   {
+	       double s_bin;  
+	       s_bin= (2/Math.PI)* Math.atan((Math.PI/60)*x);
+	       
+	       if(s_bin<0)
+	       {
+	           s_bin = s_bin*-1;
+	       }
+	       return s_bin;
+	       
+	   }
 	
     private void setTries(int i) {
 		// TODO Auto-generated method stub
@@ -339,67 +388,9 @@ public class ArtificialBeeColony {
 
 	        return getRand;     
 	    }
-	 
-	private void add(Solucion solucion) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	private ArrayList<Double> calculaprobabilidades(ArrayList<Solucion> flor, double MejorFit) {
-
-		ArrayList<Double> prob = null;
-		for (int i = 0; i < flor.size(); i++) {
-
-			prob.set(i,
-					(0.9 * (CalculateFitness(CalculateFitness(flor.get(i).getModel().objectiveFunction()) / MejorFit))
-							+ 0.1));
-
-		}
-
-		return prob;
-	}
 
 	public int getEjecuciones() {
 		return this.Ejecuciones;
 	}
 
-//	public static void quickSort3(ArrayList<Solucion> arr, int low, int high) {
-//		if (arr == null || arr.size() == 0)
-//			return;
-//
-//		if (low >= high)
-//			return;
-//
-//		// pick the pivot
-//		int middle = low + (high - low) / 2;
-//		int pivot = arr.get(middle).getFunObj();
-//
-//		// make left < pivot and right > pivot
-//		int i = low, j = high;
-//		while (i <= j) {
-//			while (arr.get(i).getFunObj() < pivot) {
-//				i++;
-//			}
-//
-//			while (arr.get(j).getFunObj() > pivot) {
-//				j--;
-//			}
-//
-//			if (i <= j) {
-//				Solucion temp = arr.get(i);
-//				arr.set(i, arr.get(j));
-//				arr.set(j, temp);
-//
-//				i++;
-//				j--;
-//			}
-//		}
-//
-//		// recursively sort two sub parts
-//		if (low < j)
-//			quickSort3(arr, low, j);
-//
-//		if (high > i)
-//			quickSort3(arr, i, high);
-//	}
 }

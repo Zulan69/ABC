@@ -15,6 +15,7 @@ public class Lanzador {
 	private int j;
 	private int k;
 	private int i;
+	private boolean ContAbejas=false;
 
 	public boolean ejecutarAplicacion() {
 
@@ -55,35 +56,38 @@ public class Lanzador {
 					time_start = System.currentTimeMillis();
 					time_end = System.currentTimeMillis();
 
+					InterCambio sol = new InterCambio();
+					
 					for (k = 0; k < aux.getAbejas(); k++) {
 
 						ArtificialBeeColony ABC = (ArtificialBeeColony) config.leerArchivo("archivo");
 						
 						time_start = System.currentTimeMillis();
 						
-						Solucion sol = ABC.algorithm(problemas.getProblema(i));
+						if(ContAbejas)
+							System.out.println("Abeja "+k);
+						
+						sol = ABC.algorithm(problemas.getProblema(i));
 						
 						start = false;
 						
-						
-						Reloj r = new Reloj();
 						if (k == 0) {
-							result[j][k] = sol.getModel().getLocalZ();
+							result[j][k] = sol.getSolucion().getModel().getLocalZ();
 							resultPob[j][k] = 0;
 
-							mejorSol = sol.getModel().getLocalZ();
+							mejorSol = sol.getSolucion().getModel().getLocalZ();
 							
 						} else {
 							
-							if (sol.getModel().getLocalZ() < mejorSol) {
-								mejorSol = sol.getModel().getLocalZ();
-								result[j][k]= sol.getModel().getLocalZ();
-								resultPob[j][k] = sol.getModel().getLocalZ();
+							if (sol.getSolucion().getModel().getLocalZ() < mejorSol) {
+								mejorSol = sol.getSolucion().getModel().getLocalZ();
+								result[j][k]= sol.getSolucion().getModel().getLocalZ();
+								resultPob[j][k] = sol.getSolucion().getModel().getLocalZ();
 								
 							} else {
 								
 								result[j][k] = mejorSol;
-								resultPob[j][k] = sol.getModel().getLocalZ();
+								resultPob[j][k] = sol.getSolucion().getModel().getLocalZ();
 								
 							}
 							
@@ -92,7 +96,7 @@ public class Lanzador {
 						
 						
 						//resultTime[k][j] = time_end - time_start;
-					//sol.getModel().setAndShowMeasures();	
+						//sol.getModel().setAndShowMeasures();	
 					}
 					
 					
@@ -104,8 +108,10 @@ public class Lanzador {
 				
 				resultados.setIteracionOptimo(result,resultPob);
 				resultados.setResumen(resultados.PromedioMejorSol(),resultados.PoblacionPromedio());
-				System.out.println(resultados.PromedioMejorSol());
-				System.out.println(resultados.PoblacionPromedio());
+				
+				System.out.println("promedio mejor sol "+resultados.PromedioMejorSol());
+				System.out.println("mejor sol "+mejorSol);
+				
 				
 			}
 

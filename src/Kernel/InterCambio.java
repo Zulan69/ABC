@@ -19,6 +19,19 @@ import Kernel.Solucion;
 	private Solucion solucion=null;
 	
 	
+	public Solucion getSolucion() {
+		return solucion;
+	}
+
+
+	public void setSolucion(Solucion solucion) {
+		this.solucion = solucion;
+	}
+
+
+	public InterCambio(){
+		}
+	
 	public InterCambio(Solucion gBest){
 		 this.solucion = gBest;
 	}

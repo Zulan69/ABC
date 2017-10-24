@@ -17,6 +17,8 @@ import jdk.internal.org.objectweb.asm.tree.analysis.Value;
 
 public class Excel {
 
+	private boolean ONExcel=false;
+
 	public void writerResultExcel(int [][] MejorFitness, String nombreXls, int[][] resultPob, long[][] resultTime,int Ejecuciones,int Abejas) {
 		// TODO Auto-generated method stub
 		
@@ -69,7 +71,10 @@ public class Excel {
 			
 			for(int i=0;i<Ejecuciones;i++){
 				celda = fila.createCell(i);
-				System.out.println("i "+i+" j "+j+"res "+MejorFitness[i][j]);
+				
+				if(ONExcel)
+					System.out.println("[Excel] ---> i "+i+" j "+j+"res "+MejorFitness[i][j]);
+				
 				celda.setCellValue(MejorFitness[i][j]);
 				
 			}
